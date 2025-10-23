@@ -9,25 +9,36 @@ message = "here is a message" # prepare a message
 
 
 def send_message(message):
-    i2c.writeto(scan_addr[0], message.encode()) #(addr, buf, stop=True, /) buf = encoded message.
+    try:
+        i2c.writeto(scan_addr[0], message.encode()) #(addr, buf, stop=True, /) buf = encoded message.
+        print("the message has been successfully send to address \n", hex(scan_addr[0]))
+    except OSError
+        print("The master pico wasn't able to send the data")
     # need to add error case handling
 
 
-
-try:
-    send_message(message)
-    print("message has been sent to address: ", hex(scan_addr[0]))
-except OSError as e:
-    print("The master pico wasn't able to send the data")
+if scan_addr:
+    send_message
 
 
+""""
+
+convert_message_to_morse_code()
+
+
+send_message(message)
+    call convert_message_to_morse_code()
+
+
+
+""""
 
 
 ############# TO add for recieve ############
 
-"""#"
+"""
 create a function to send a message
 
 Create an error handling case in case message isn't recieved.
 
-"""#"
+"""
