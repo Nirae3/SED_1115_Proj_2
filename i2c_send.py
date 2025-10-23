@@ -19,3 +19,15 @@ try:
     print("message has been sent to address: ", hex(scan_addr[0]))
 except OSError as e:
     print("The master pico wasn't able to send the data")
+
+
+
+
+############# TO add for recieve ############
+
+"""#"
+create a function to send a message
+
+Create an error handling case in case message isn't recieved.
+
+"""#"
