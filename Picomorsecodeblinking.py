@@ -12,7 +12,7 @@ line = led1.freq(50000) #the frequency of the lines
 #led1.freq(5000)
 led1.duty_u16(32768)
 
-for i in range (3):
+for i in range (1):
     led1.duty_u16(32768) #the brightness of the led
     time.sleep(.4) #the time between the dots and lines should always be set to 0.4 seconds
     led1.duty_u16(0) #indicating the brightness of the LED during a pause
@@ -20,10 +20,9 @@ for i in range (3):
     print(dot)
 
 for i in range (1):
+    led1.duty_u16(0)
+    time.sleep(.4) #keeps the light at 0 Hz due to previous function
     led1.duty_u16(32768)
-    time.sleep(.4)
-    led1.duty_u16(65535)
-    time.sleep(.4)
+    time.sleep(1.5) #keeps light on at 32768 Hz due to previous function
+    led1.duty_u16(0)
     print(line)
-
-#valueA = adcA.read_u16()
