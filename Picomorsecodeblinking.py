@@ -9,6 +9,7 @@ time.sleep(1)
 uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
 uart.init(bits=8, parity=None, stop=1)
 
+#defining variable to the uart methods; that read and write data
 mtr = uart.read
 mts = uart.write
 
@@ -43,7 +44,10 @@ def line():
     #print(line)
     return(line)
 
+#while I have a message to write, allow user input
+#while there is a message to receive from the other pico read me the message
 while True:
+    #If there are no messages being sent or received; return a message saying i am up to date
     try:
         message = input("") #sending my message to other pico
         if message:
