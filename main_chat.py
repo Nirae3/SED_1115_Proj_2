@@ -8,6 +8,9 @@ ack_timeout=0.5 # Wait 500ms for ACK confirmation
 link_check_interval = 5 # Check link status every 5 seconds
 last_link_check_time = time.time()
 
+# NEW: Maximum message length to limit blocking time during LED flashing
+MAX_MESSAGE_LENGTH = 25
+
 # --- LED FLASHING CONSTANTS ---
 UNIT_TIME = 0.2  # Base time unit (seconds) for Morse signaling
 LED_BRIGHTNESS = 32768 # 50% duty cycle
@@ -138,7 +141,7 @@ except Exception as e:
 def send_message(message):
     """Sends a raw string message over UART."""
     # Note: message is already Morse or a control message (ACK/KEEP_ALIVE)
-    uart.write(message.encode() + b'\n') 
+    uart.write(message.encode() + b'\n')
 
 
 def read_message():
@@ -185,7 +188,7 @@ def send_and_confirm(message):
         message_to_send = text_to_morse(message)
         print(f"Sending Morse: '{message_to_send}'")
         
-        # NEW: Send (Flash) the Morse code signal on the sending Pico's LED (PWM output)
+        # Send (Flash) the Morse code signal on the sending Pico's LED (PWM output)
         flash_morse_code(message_to_send)
         
     else:
@@ -237,21 +240,25 @@ while True:
     # 3. --- Handle User Input ---
     # Only allow user messages to be sent if the link is active
     try: 
-        user_message = input("Type message (or press Enter): ") 
+        user_message = input(f"Type message (Max {MAX_MESSAGE_LENGTH} chars, or press Enter): ") 
         
         if user_message.strip():
+            # Check message length based on the new maximum limit
+            if len(user_message) > MAX_MESSAGE_LENGTH:
+                print(f"Message too long! Max length is {MAX_MESSAGE_LENGTH} characters. Your message has {len(user_message)} characters.")
+                continue
+                
             if link_status:
                 # Use the confirmation function for all messages
-                # send_and_confirm handles the Morse encoding and now flashes the LED
                 send_and_confirm(user_message) 
             else:
-                print(" Cannot send message: Link is currently DOWN.")
+                print("Cannot send message: Link is currently DOWN.")
 
     except EOFError:
         print("Input error or stream closed.")
         break
     except KeyboardInterrupt:
-        print("\n Exiting loop.")
+        print("\nExiting loop.")
         break
         
     time.sleep(0.1)
