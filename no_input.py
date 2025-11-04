@@ -1,22 +1,19 @@
-# main 3
-
-from machine import UART, Pin, PWM, ADC, I2C
+from machine import UART, Pin, PWM, ADC
 import time
-from ads1x15 import ADS1015
 
 # -------------------- GLOBAL VARIABLES --------------------
 expected_msg_len = 0
-led1 = PWM(Pin(16), freq=1000)
-adcA = ADC(Pin(26))
+led1 = PWM(Pin(16), freq=1000)  # LED for Morse blinking feedback
+pot_adc = ADC(Pin(26))          # Internal ADC for potentiometer on GP26 (ADC0)
 
 # -------------------- INITIALIZE UART --------------------
-try:  
-    # Handles if there is something wrong with the UART protocol, e.g., Pin configuration
+try:
+    # UART 1 on GP8 (TX) and GP9 (RX)
     uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
     uart.init(bits=8, parity=None, stop=1)
-    print("UART Initialized correctly")
+    print("UART Initialized correctly on GP8/GP9")
 except Exception as e:
-    print(f"ERROR: failed to initialize UART. Please check your hardware configuration")
+    print(f"ERROR: failed to initialize UART. Please check your hardware configuration: {e}")
 
 # -------------------- MORSE CODE DEFINITION --------------------
 def string_to_morse(message):
@@ -68,25 +65,30 @@ def morse_to_text(morse_code):
         decoded_text.append(decoded_word)
 
     return ' '.join(decoded_text)
-################################################
-I2C_SDA = 14
-I2C_SCL = 15
-ads1015_addr = 0x48
-ads1015_input_channel = 2
 
-try:
-    pwm_out = PWM(Pin(18), freq=1000)
-    print("PWM output initialized on PIN 18")
-except Exception as e:
-    print(f"ERROR: Failed to initialize PWM output: {e}")
+# -------------------- LED BLINKING (MORSE) --------------------
+def dot():
+    led1.duty_u16(32768)  # LED ON (50% brightness)
+    time.sleep(0.4)
+    led1.duty_u16(0)      # LED OFF
+    time.sleep(0.4)
 
-try:
-    i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
-    adc = ADS1015(i2c, ads1015_addr, 1)
-    address = i2c.scan()
-    print("I2C address found:", [hex(a) for a in address])
-except Exception as e:
-    print(f"ERROR: ADS1015/I2C initialization failed: {e}")
+def line():
+    led1.duty_u16(32768)  # LED ON
+    time.sleep(1.2)
+    led1.duty_u16(0)      # LED OFF
+    time.sleep(0.4)
+
+def blink_morse(morse_code):
+    for symbol in morse_code:
+        if symbol == '.':
+            dot()
+        elif symbol == '-':
+            line()
+        elif symbol == ' ':
+            time.sleep(0.8)
+        elif symbol == '/':
+            time.sleep(1.5)
 
 # -------------------- SEND / RECEIVE MESSAGE --------------------
 def send_message(message):
@@ -95,32 +97,58 @@ def send_message(message):
     expected_msg_len = len(encoded_message)
     uart.write(encoded_message + '\n')
 
+    print("Blinking the sent message in Morse...")
+    blink_morse(encoded_message)
 
-def read_message():
-    if uart.any():
-        data = uart.read()
+
+def read_message(timeout_ms=5000):
+    global expected_msg_len
+    start_time = time.ticks_ms()
+    received_morse = ""
+
+    while time.ticks_diff(time.ticks_ms(), start_time) < timeout_ms:
+        data = uart.readline()
         if data:
-            print("Received:", data.decode())
+            received_morse += data.decode()
+            current_len = len(received_morse.strip())
 
+            if current_len >= expected_msg_len and expected_msg_len > 0:
+                message = received_morse.strip()
+                print("Received:", message)
+                print("Decoded message:", morse_to_text(message))
+                print("Blinking received Morse message...")
+                blink_morse(message)
 
-# -------------------- AUTOMATIC ADC SENDER LOOP --------------------
+                expected_msg_len = 0
+                return message
+
+        time.sleep_ms(50)
+
+    if expected_msg_len > 0:
+        expected_msg_len = 0
+        # Timeout error is commented to prevent spamming if no reply
+        # raise ValueError("ERROR: Timeout. Message not received fully within the time limit")
+
+    return None
+
+# -------------------- AUTOMATIC POTENTIOMETER SENDER LOOP --------------------
 while True:
     try:
-        # 1. READ ADC VALUE
-        raw_adc_value = adc.read(0, ads1015_input_channel)
+        # 1. READ POTENTIOMETER VALUE (0 to 65535)
+        raw_adc_value = pot_adc.read_u16()
+
+        # 2. PREPARE MESSAGE
         message_to_send = str(raw_adc_value)
 
-        # 2. SEND MESSAGE
-        print(f"Read ADC Value: {raw_adc_value}. Sending via Morse...")
+        # 3. SEND MESSAGE
+        print(f"Reading Potentiometer (GP26): {raw_adc_value}. Sending via Morse...")
         send_message(message_to_send)
 
-        # 3. WAIT FOR REPLY/ACK
+        # 4. CHECK FOR REPLY/ACK
         print("Message sent, checking for reply...")
-        received_reply = read_message()
+        received_reply = read_message(timeout_ms=2000)  # Short timeout for responsiveness
 
-        if received_reply is None and expected_msg_len > 0:
-            raise ValueError("ERROR: Timeout reached. No reply was received from UART. Please check your hardware")
-        elif received_reply is None:
+        if received_reply is None:
             print("No reply received.")
 
     except ValueError as e:
