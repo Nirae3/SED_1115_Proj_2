@@ -5,6 +5,18 @@ adcA = ADC(Pin(26))
 led1 = PWM(Pin(18), freq=(1000))
 expected_msg_len=0
 
+
+######################### PWM CONFIG ############################
+try:
+    pwm_out = PWM(Pin(18), freq=1000)
+    print(f"PWM output initialized on PIN 18")
+except Exception as e:
+    print(f"ERROR: Failed to initialize PWM output: {e}")
+
+
+
+
+
 ################ INITIALIZE UART ##########################################
 try:   # Handles if there is something wrong with the UART protocol. ex. Pin configuration is wrong
     uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
@@ -95,7 +107,7 @@ def read_message(timeout_ms=5000):
                 expected_msg_len = 0 # after your'e done, clear up t he expected_msg_len
                 return message
             
-        time.sleep_ms(20)
+        time.sleep_ms(50)
     if expected_msg_len > 0:
         expected_msg_len = 0
         raise ValueError ("ERROR: Timeout. Message not recieved fully within the time limit")
