@@ -1,20 +1,8 @@
-from machine import UART, Pin, PWM, ADC
+from machine import UART, Pin, PWM, ADC, I2C
 import time
+from ads1x15 import ADS1015
 
-adcA = ADC(Pin(26))
-led1 = PWM(Pin(18), freq=(1000))
 expected_msg_len=0
-
-
-######################### PWM CONFIG ############################
-try:
-    pwm_out = PWM(Pin(18), freq=1000)
-    print(f"PWM output initialized on PIN 18")
-except Exception as e:
-    print(f"ERROR: Failed to initialize PWM output: {e}")
-
-
-
 
 
 ################ INITIALIZE UART ##########################################
@@ -77,6 +65,26 @@ def morse_to_text(morse_code):
     return ' '.join(decoded_text)
 
 
+
+
+################ INITIALIZING I2C ###############################
+
+I2C_SDA = 14
+I2C_SCL = 15
+ads1015_addr = 0x48
+ads1015_input_channel = 0 
+
+i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
+adc = ADS1015(i2c, ads1015_addr, 1)
+
+try:
+    i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
+    adc = ADS1015(i2c, ads1015_addr, 1)
+    address = i2c.scan()
+    print("I2C address found:", [hex(a) for a in address])
+except Exception as e:
+    print(f"ERROR: ADS1015/I2C initialization failed: {e}")
+
 ################### SEND MESSAGE, ACKNOWLEDGE, RECIEVE MESSAGE #######################
 def send_message(message): # define a function to send message
     global expected_msg_len
@@ -114,23 +122,77 @@ def read_message(timeout_ms=5000):
     
     return None
 
-    
-while True: # always loop to keep checking for messages.
-    read_message() # read the message always
 
+
+################## GIVE USER A CHOICE TO CHOOSE FROM ###########################
+# Place this function definition before your while True loop.
+
+def handle_user_choice():
+    print("\n--- Menu ---")
+    print("1: Input a text message to send")
+    print("2: Send current ADC/PWM sensor value")
+    print("3: Check for received messages now")
+    print("------------")
+    choice = input("Enter option (1, 2, or 3): ").strip()
+    
+    if choice == '1':
+        #  Option 1: Send a typed message
+        user_message = input("Type your message: ")
+        if user_message:
+            send_message(user_message)
+            return True # Indicates a send action occurred
+            
+    elif choice == '2':
+        # Option 2: Send the ADC/PWM value
+        global adc, ads1015_input_channel
+        
+        # Read the sensor value (assuming adc and channel are defined globally)
+        raw_adc_value = adc.read(rate=4, channel1=ads1015_input_channel, channel2=None)
+        message_to_send = str(raw_adc_value)
+        
+        print(f"Read ADC Value: {raw_adc_value}. Sending via Morse...")
+        send_message(message_to_send)
+        return True # Indicates a send action occurred
+        
+    elif choice == '3':
+        print("Checking for incoming message now...")
+        read_message() 
+        return True # Indicates a read action occurred
+        
+    else:
+        print(f"Invalid choice: {choice}. Please enter 1, 2, or 3.")
+        return False
+
+
+
+# Ensure all global variables (expected_msg_len, adc, ADS1015_INPUT_CHANNEL)
+# are defined at the top of your main.py file.
+
+while True:
     try: 
-        user_message = input("Type a message: ") # takes input message
-        if user_message.strip():
-            send_message(user_message) # if there is input, send that message
-            print("Message sent, waiting for confermation/reply ...")
+        action_occurred = handle_user_choice()
+        
+        if action_occurred:
+            time.sleep(0.1)
+        if action_occurred:
+            print("Action completed. Checking for confirmation/reply...")
             recieved_reply = read_message(timeout_ms=5000)
-            if recieved_reply is None:
+            
+            if recieved_reply is None and expected_msg_len > 0:
+
                 raise ValueError("ERROR: Timeout reached. No reply was recieved from UART. Please check your hardware")
-            #wait_for_ack()                             CODE FOR ACK
-            #time.sleep(2)                              CODE FOR ACK
+            else:
+                print("You didn't recieve a message")
+            
     except EOFError:
-        print("ERROR reading input") # otherwise throw an error
+        print("ERROR reading input") 
         pass
     except ValueError as e:
         print(f"COMMUNICATION FAILURE: {e}")
+    except Exception as e:
+        # Catch errors from ADC/general hardware issues
+        print(f"HARDWARE ERROR: {e}")
+
+    time.sleep(0.5) # General loop delay
+
     time.sleep(0.5)
