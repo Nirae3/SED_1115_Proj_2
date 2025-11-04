@@ -201,24 +201,3 @@ while True:
     time.sleep(0.5) # General loop delay
 
     time.sleep(0.5)
-    
-"""
-while True: # always loop to keep checking for messages.
-    read_message() # read the message always
-
-    try: 
-        user_message = input("Type a message: ") # takes input message
-        if user_message.strip():
-            send_message(user_message) # if there is input, send that message
-            print("Message sent, waiting for confermation/reply ...")
-            recieved_reply = read_message(timeout_ms=5000)
-            if recieved_reply is None:
-                raise ValueError("ERROR: Timeout reached. No reply was recieved from UART. Please check your hardware")
-            #wait_for_ack()                             CODE FOR ACK
-            #time.sleep(2)                              CODE FOR ACK
-    except EOFError:
-        print("ERROR reading input") # otherwise throw an error
-        pass
-    except ValueError as e:
-        print(f"COMMUNICATION FAILURE: {e}")
-    time.sleep(0.5)"""
