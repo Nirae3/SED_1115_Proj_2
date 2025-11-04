@@ -47,8 +47,11 @@ while True:
             receive_log_output=f"Recieved: {received_msg}"
         else:
             print("no message")
-
-        print(f"{send_log_output:<30} | {receive_log_output}")
+        
+        try: 
+            print(f"{send_log_output:<30} | {receive_log_output}")
+        except: 
+            print("waiting for both Picos' to come back up")
 
     except Exception as e:
         print(f"ERROR: {e}")
