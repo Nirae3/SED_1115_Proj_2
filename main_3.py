@@ -213,14 +213,13 @@ while True:
         
         if action_occurred:
             time.sleep(0.1)
-        if action_occurred:
             print("Action completed. Checking for confirmation/reply...")
             recieved_reply = read_message(timeout_ms=5000)
             
             if recieved_reply is None and expected_msg_len > 0:
 
                 raise ValueError("ERROR: Timeout reached. No reply was recieved from UART. Please check your hardware")
-            else:
+            elif recieved_reply is None:
                 print("You didn't recieve a message")
             
     except EOFError:
