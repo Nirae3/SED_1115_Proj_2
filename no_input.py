@@ -4,7 +4,7 @@ import time
 #### ADC configuration#######
 
 ADC_PIN = 26  
-SEND_INTERVAL = 0.2  # Send/read every 2 seconds
+SEND_INTERVAL = 1  # Send/read every 2 seconds
 
 ###### UART initilization #####################
 try:
