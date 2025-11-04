@@ -61,9 +61,3 @@ while True:
             time.sleep(.4)
     except:
         print("*Read All Messages*")
-
-#if uart.any():
-    #try:
-        #print("Received:", mtr)
-    #except:
-        #print("*Read all messages*")
