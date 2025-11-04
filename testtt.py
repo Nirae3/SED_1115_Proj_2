@@ -1,37 +1,34 @@
+from machine import UART, Pin
 import time
-from machine import Pin, UART
 
-# Set up UART with baudrate, TX and RX pins
-uart = UART(0, baudrate=9600, tx=Pin(0), rx=Pin(1))
+uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
+uart.init(bits=8, parity=None, stop=1)
 
-# Function to send a message over UART
-def send_message(message):
-    uart.write(message)  # Send the message
-    print(f"Sent: {message.strip()}")
 
-# Function to receive a message over UART
-def receive_message():
-    if uart.any():  # Check if there is data available to read
-        message = uart.read()  # Read the message
-        return message.decode().strip()  # Decode and return the message as a string
-    return None  # No message received
+def send_message(message): # define a function to send message
+    uart.write(message + '\n')  
 
-while True:
-    # Wait for the user to input a message
-    user_input = input("Enter a message to send: ")
 
-    if user_input:  # If there is a message to send
-        # Send the user input as a message over UART
-        send_message(user_input)
+#check for messages, if there is any messages, save to data, and print recieved
+def read_message():
+    if uart.any():
+        data = uart.read()
+        if data:
+            print("Received:", data.decode())
 
-    # Wait a moment before checking for a response
-    time.sleep(1)
+        
 
-    # Check if a message has been received
-    received = receive_message()
-    if received:
-        print(f"Received: {received}")
-    else:
-        print("No message received yet.")
-    
-    time.sleep(1)  # Add a small delay before repeating the cycle
+while True: # always loop to keep checking for messages.
+    t = time.localtime() # format the time prettily
+    time_str = "{:02d}:{:02d}:{:02d}".format(t[3], t[4], t[5])  
+    send_message("KEEP_ALIVE: " + time_str) # call function to send message keep alive
+    read_message() # read the message always
+
+    try: 
+        user_message = input("Type a message: ") # takes input message
+        if user_message.strip():
+            send_message(user_message) # if there is input, send that message
+    except EOFError:
+        print("there was an error with the input") # otherwise throw an error
+        pass
+    time.sleep(0.5)
