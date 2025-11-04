@@ -3,8 +3,8 @@ import time
 
 #### ADC configuration#######
 
-ADC_PIN = 26     # Potentiometer on GP26
-SEND_INTERVAL = 0.2  # Send/read every 50ms (20Hz)
+ADC_PIN = 26  
+SEND_INTERVAL = 0.2  # Send/read every 2 seconds
 
 ###### UART initilization #####################
 try:
@@ -19,7 +19,7 @@ adc = ADC(Pin(26))
 print(f"Potentiometer Reader initialized on GP")
 
 # -------------------- SEND / RECEIVE FUNCTIONS --------------------
-def send_message(value: int):
+def send_message(value):
     msg = f"{value}\n"
     uart.write(msg)
     return msg.strip()
