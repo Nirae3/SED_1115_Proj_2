@@ -170,23 +170,16 @@ def handle_user_choice():
 
 while True:
     try: 
-        # Attempt to handle the user's choice (send message, send ADC, or check status)
         action_occurred = handle_user_choice()
         
         if action_occurred:
-            # If an action (send or check) occurred, wait briefly for network effects
             time.sleep(0.1)
-
-        # After a send operation (which returns True), check for confirmation/reply
         if action_occurred:
             print("Action completed. Checking for confirmation/reply...")
-            
-            # Use the existing logic to check for reply and handle timeout
             recieved_reply = read_message(timeout_ms=5000)
             
             if recieved_reply is None and expected_msg_len > 0:
-                # expected_msg_len > 0 checks if we were actually waiting for a reply
-                # The read_message function should handle resetting this value on timeout.
+
                 raise ValueError("ERROR: Timeout reached. No reply was recieved from UART. Please check your hardware")
             
     except EOFError:

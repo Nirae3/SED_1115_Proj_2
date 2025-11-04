@@ -2,7 +2,7 @@ from machine import UART, Pin, PWM, ADC
 import time
 
 adcA = ADC(Pin(26))
-led1 = PWM(Pin(18), freq=(1000))
+led1 = PWM(Pin(16), freq=(1000))
 expected_msg_len=0
 
 ################ INITIALIZE UART ##########################################
