@@ -51,7 +51,7 @@ while True:
         try: 
             print(f"{send_log_output:<30} | {receive_log_output}")
         except: 
-            print("waiting for both Picos' to come back up")
+            print("waiting for both picos to come back up")
 
     except Exception as e:
         print(f"ERROR: {e}")
