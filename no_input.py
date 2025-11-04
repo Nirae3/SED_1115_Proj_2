@@ -4,7 +4,7 @@ import time
 #### ADC configuration#######
 
 ADC_PIN = 26     # Potentiometer on GP26
-SEND_INTERVAL = 0.05  # Send/read every 50ms (20Hz)
+SEND_INTERVAL = 0.2  # Send/read every 50ms (20Hz)
 
 ###### UART initilization #####################
 try:
@@ -19,36 +19,35 @@ adc = ADC(Pin(26))
 print(f"Potentiometer Reader initialized on GP")
 
 # -------------------- SEND / RECEIVE FUNCTIONS --------------------
-def send_message(value: int)
+def send_message(value: int):
     msg = f"{value}\n"
     uart.write(msg)
     return msg.strip()
 
-def read_message(timeout_ms: int = 50)
+def read_message(timeout_ms: int = 50):
     data = uart.readline()
     if data:
         return data.decode().strip()
-    return "nooooo"
+    return None
 
 # -------------------- MAIN LOOP --------------------
-print("-" * 60)
-print(f"{'LOCAL SENDER LOG (GP26)':<30} | {'REMOTE RECEIVER LOG (GP9)'}")
-print("-" * 60)
+print("___________________________________________________________")
+print("      SENDER          |          RECIEVER         ")
+print("__________________________________________________________")
 
 while True:
     try:
-        # --- STEP 1: READ AND SEND ---
-        local_value = adc.read_u16()
-        sent_msg = send_message(local_value)
 
-        # --- STEP 2: RECEIVE ---
+        adc_value = adc.read_u16()
+        sent_msg = send_message(adc_value)
+        send_log_output = f"Sent: {sent_msg}"  # send output
+
         received_msg = read_message()
+        if received_msg:
+            receive_log_output=f"Recieved: {received_msg}"
+        else:
+            print("no message")
 
-        # --- STEP 3: LOG OUTPUT ---
-        send_log_output = f"Sent: {sent_msg}"
-        receive_log_output = f"Received: {received_msg}" if received_msg else "No message."
-
-        # Two-column console log
         print(f"{send_log_output:<30} | {receive_log_output}")
 
     except Exception as e:
