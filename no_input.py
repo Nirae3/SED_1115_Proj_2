@@ -24,7 +24,7 @@ def send_message(value):
     uart.write(msg)
     return msg.strip()
 
-def read_message(timeout_ms: int = 50):
+def read_message():
     data = uart.readline()
     if data:
         return data.decode().strip()
