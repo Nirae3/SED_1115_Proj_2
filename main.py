@@ -4,6 +4,8 @@ from ads1x15 import ADS1015
 
 expected_msg_len=0
 
+##################### PWM ################################
+
 
 ################ INITIALIZE UART ##########################################
 try:   # Handles if there is something wrong with the UART protocol. ex. Pin configuration is wrong
@@ -72,7 +74,14 @@ def morse_to_text(morse_code):
 I2C_SDA = 14
 I2C_SCL = 15
 ads1015_addr = 0x48
-ads1015_input_channel = 0 
+ads1015_input_channel = 2
+
+try:
+    pwm_out = PWM(Pin(18), freq=1000)
+    print(f"PWM output initialized on PIN 16")
+except Exception as e:
+    print(f"ERROR: Failed to initialize PWM output: {e}")
+
 
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ads1015_addr, 1)
@@ -147,7 +156,7 @@ def handle_user_choice():
         global adc, ads1015_input_channel
         
         # Read the sensor value (assuming adc and channel are defined globally)
-        raw_adc_value = adc.read(rate=4, channel1=ads1015_input_channel, channel2=None)
+        raw_adc_value = adc.read(0, ads1015_input_channel)
         message_to_send = str(raw_adc_value)
         
         print(f"Read ADC Value: {raw_adc_value}. Sending via Morse...")
