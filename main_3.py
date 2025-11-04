@@ -102,7 +102,7 @@ ads1015_input_channel = 2
 
 try:
     pwm_out = PWM(Pin(18), freq=1000)
-    print(f"PWM output initialized on PIN 16")
+    print(f"PWM output initialized on PIN 18")
 except Exception as e:
     print(f"ERROR: Failed to initialize PWM output: {e}")
 
@@ -207,7 +207,21 @@ def handle_user_choice():
 # Ensure all global variables (expected_msg_len, adc, ADS1015_INPUT_CHANNEL)
 # are defined at the top of your main.py file.
 
-while True:
+
+while True: 
+    try:
+        user_message = input("Type your message: ")
+        send_message(user_message)
+    except:
+        print("couldn't send message")
+
+    if uart.any():
+        read_message()
+        time.sleep(0.3)
+
+
+
+"""while True:
     try: 
         action_occurred = handle_user_choice()
         
@@ -234,3 +248,4 @@ while True:
     time.sleep(0.5) # General loop delay
 
     time.sleep(0.5)
+"""
