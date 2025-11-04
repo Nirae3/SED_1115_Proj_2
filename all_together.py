@@ -207,10 +207,10 @@ def handle_user_choice():
 # Ensure all global variables (expected_msg_len, adc, ADS1015_INPUT_CHANNEL)
 # are defined at the top of your main.py file.
 
+user_message = input("Type your message: ")
 
 while True: 
     try:
-        user_message = input("Type your message: ")
         send_message(user_message)
         print(f"sending {user_message}")
     except:
