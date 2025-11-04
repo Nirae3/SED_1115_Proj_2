@@ -114,7 +114,6 @@ def read_message(timeout_ms=5000):
     
     return None
 
-
     
 while True: # always loop to keep checking for messages.
     read_message() # read the message always
