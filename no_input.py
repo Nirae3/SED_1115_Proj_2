@@ -1,76 +1,73 @@
 from machine import UART, Pin, PWM, ADC
 import time
 
-# -------------------- GLOBAL VARIABLES --------------------
-expected_msg_len = 0
-led1 = PWM(Pin(16), freq=1000)  # LED for Morse blinking feedback
-pot_adc = ADC(Pin(26))          # Internal ADC for potentiometer on GP26 (ADC0)
+# -------------------- CONFIGURATION --------------------
+IS_SENDER = True  # Set True if this Pico reads potentiometer and sends, False if it receives and outputs PWM
+UART_BAUDRATE = 9600
+TX_PIN = 8
+RX_PIN = 9
+PWM_PIN = 16
+ADC_PIN = 26
 
 # -------------------- INITIALIZE UART --------------------
 try:
-    # UART 1 on GP8 (TX) and GP9 (RX)
-    uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
+    uart = UART(1, baudrate=UART_BAUDRATE, tx=Pin(TX_PIN), rx=Pin(RX_PIN))
     uart.init(bits=8, parity=None, stop=1)
-    print("UART Initialized correctly on GP8/GP9")
+    print(f"UART initialized (TX={TX_PIN}, RX={RX_PIN})")
 except Exception as e:
-    print(f"ERROR: failed to initialize UART. Please check your hardware configuration: {e}")
+    print(f"UART initialization failed: {e}")
 
+# -------------------- INITIALIZE HARDWARE --------------------
+if IS_SENDER:
+    adc = ADC(Pin(ADC_PIN))
+    print(f"Sender mode: Reading potentiometer on GP{ADC_PIN}")
+else:
+    pwm_out = PWM(Pin(PWM_PIN))
+    pwm_out.freq(1000)  # 1 kHz PWM
+    print(f"Receiver mode: Outputting PWM on GP{PWM_PIN}")
 
+# -------------------- SEND / RECEIVE FUNCTIONS --------------------
+def send_message(value: int):
+    msg = str(value) + '\n'
+    uart.write(msg)
+    print(f"Sent: {msg.strip()}")
 
-# -------------------- SEND / RECEIVE MESSAGE --------------------
-def send_message(message): # define a function to send message
-    uart.write(message + '\n')  
-
-def read_message(timeout_ms=5000):
-    global expected_msg_len
+def read_message(timeout_ms=2000):
     start_time = time.ticks_ms()
-    received_morse = ""
+    received = b''
 
     while time.ticks_diff(time.ticks_ms(), start_time) < timeout_ms:
         data = uart.readline()
         if data:
-            received_morse += data.decode()
-            current_len = len(received_morse.strip())
-
-            if current_len >= expected_msg_len and expected_msg_len > 0:
-                message = received_morse.strip()
-                print("Received:", message)
-
-                expected_msg_len = 0
-                return message
-
-        time.sleep_ms(50)
-
-    if expected_msg_len > 0:
-        expected_msg_len = 0
-        # Timeout error is commented to prevent spamming if no reply
-        # raise ValueError("ERROR: Timeout. Message not received fully within the time limit")
-
+            received += data
+            if b'\n' in received:
+                msg = received.decode().strip()
+                return msg
+        time.sleep_ms(10)
     return None
 
-# -------------------- AUTOMATIC POTENTIOMETER SENDER LOOP --------------------
+# -------------------- MAIN LOOP --------------------
 while True:
     try:
-        # 1. READ POTENTIOMETER VALUE (0 to 65535)
-        raw_adc_value = pot_adc.read_u16()
+        if IS_SENDER:
+            # Read potentiometer and send value
+            value = adc.read_u16()  # 0-65535
+            send_message(value)
+        else:
+            # Receive value and output PWM
+            msg = read_message(timeout_ms=2000)
+            if msg:
+                try:
+                    pwm_value = int(msg)
+                    # Scale 16-bit ADC value to 0-65535 for PWM duty
+                    pwm_out.duty_u16(pwm_value)
+                    print(f"Received {pwm_value}, applied to PWM")
+                except ValueError:
+                    print(f"Invalid message received: {msg}")
+            else:
+                print("No message received.")
 
-        # 2. PREPARE MESSAGE
-        message_to_send = str(raw_adc_value)
-
-        # 3. SEND MESSAGE
-        print(f"Reading Potentiometer (GP26): {raw_adc_value}. Sending via Morse...")
-        send_message(message_to_send)
-
-        # 4. CHECK FOR REPLY/ACK
-        print("Message sent, checking for reply...")
-        received_reply = read_message(timeout_ms=2000)  # Short timeout for responsiveness
-
-        if received_reply is None:
-            print("No reply received.")
-
-    except ValueError as e:
-        print(f"COMMUNICATION FAILURE: {e}")
     except Exception as e:
-        print(f"HARDWARE ERROR: {e}")
+        print(f"ERROR: {e}")
 
-    time.sleep(2)  # Send a new message every 2 seconds
+    time.sleep(0.2)
