@@ -68,32 +68,7 @@ def morse_to_text(morse_code):
         decoded_text.append(decoded_word)
 
     return ' '.join(decoded_text)
-
-# -------------------- LED BLINKING (MORSE) --------------------
-def dot():
-    led1.duty_u16(32768)  # LED ON
-    time.sleep(0.4)
-    led1.duty_u16(0)      # LED OFF
-    time.sleep(0.4)
-
-def line():
-    led1.duty_u16(32768)  # LED ON
-    time.sleep(1.2)
-    led1.duty_u16(0)      # LED OFF
-    time.sleep(0.4)
-
-def blink_morse(morse_code):
-    for symbol in morse_code:
-        if symbol == '.':
-            dot()
-        elif symbol == '-':
-            line()
-        elif symbol == ' ':
-            time.sleep(0.8)
-        elif symbol == '/':
-            time.sleep(1.5)
-
-# -------------------- INITIALIZE I2C / ADC / PWM --------------------
+################################################
 I2C_SDA = 14
 I2C_SCL = 15
 ads1015_addr = 0x48
@@ -120,38 +95,13 @@ def send_message(message):
     expected_msg_len = len(encoded_message)
     uart.write(encoded_message + '\n')
 
-    print("Blinking the sent message in Morse...")
-    blink_morse(encoded_message)
 
-def read_message(timeout_ms=5000):
-    global expected_msg_len
-    start_time = time.ticks_ms()
-    received_morse = ""
-
-    while time.ticks_diff(time.ticks_ms(), start_time) < timeout_ms:
-        data = uart.readline()
+def read_message():
+    if uart.any():
+        data = uart.read()
         if data:
-            received_morse += data.decode()
-            current_len = len(received_morse.strip())
-            if current_len < expected_msg_len and expected_msg_len > 0:
-                print(f"WARNING: Only a fragment of message received ({current_len}/{expected_msg_len}). Waiting for more")
-            elif current_len >= expected_msg_len and expected_msg_len > 0:
-                message = received_morse.strip()
-                print("Received:", message)
-                print("Here is the decoded message:", morse_to_text(message))
-                print("Blinking received Morse message...")
-                blink_morse(message)
+            print("Received:", data.decode())
 
-                expected_msg_len = 0
-                return message
-
-        time.sleep_ms(50)
-
-    if expected_msg_len > 0:
-        expected_msg_len = 0
-        raise ValueError("ERROR: Timeout. Message not received fully within the time limit")
-
-    return None
 
 # -------------------- AUTOMATIC ADC SENDER LOOP --------------------
 while True:
@@ -166,7 +116,7 @@ while True:
 
         # 3. WAIT FOR REPLY/ACK
         print("Message sent, checking for reply...")
-        received_reply = read_message(timeout_ms=5000)
+        received_reply = read_message()
 
         if received_reply is None and expected_msg_len > 0:
             raise ValueError("ERROR: Timeout reached. No reply was received from UART. Please check your hardware")
