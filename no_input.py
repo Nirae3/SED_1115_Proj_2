@@ -1,73 +1,58 @@
-from machine import UART, Pin, PWM, ADC
+from machine import UART, Pin, ADC
 import time
 
 # -------------------- CONFIGURATION --------------------
-IS_SENDER = True  # Set True if this Pico reads potentiometer and sends, False if it receives and outputs PWM
-UART_BAUDRATE = 9600
-TX_PIN = 8
-RX_PIN = 9
-PWM_PIN = 16
-ADC_PIN = 26
+
+ADC_PIN = 26     # Potentiometer on GP26
+SEND_INTERVAL = 0.05  # Send/read every 50ms (20Hz)
 
 # -------------------- INITIALIZE UART --------------------
 try:
-    uart = UART(1, baudrate=UART_BAUDRATE, tx=Pin(TX_PIN), rx=Pin(RX_PIN))
+    uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
     uart.init(bits=8, parity=None, stop=1)
-    print(f"UART initialized (TX={TX_PIN}, RX={RX_PIN})")
+    print(f"UART initialized")
 except Exception as e:
     print(f"UART initialization failed: {e}")
 
-# -------------------- INITIALIZE HARDWARE --------------------
-if IS_SENDER:
-    adc = ADC(Pin(ADC_PIN))
-    print(f"Sender mode: Reading potentiometer on GP{ADC_PIN}")
-else:
-    pwm_out = PWM(Pin(PWM_PIN))
-    pwm_out.freq(1000)  # 1 kHz PWM
-    print(f"Receiver mode: Outputting PWM on GP{PWM_PIN}")
+# -------------------- INITIALIZE ADC --------------------
+adc = ADC(Pin(26))
+print(f"Potentiometer Reader initialized on GP")
 
 # -------------------- SEND / RECEIVE FUNCTIONS --------------------
-def send_message(value: int):
-    msg = str(value) + '\n'
+def send_message(value: int) -> str:
+    """Send ADC value over UART as a string terminated by newline."""
+    msg = f"{value}\n"
     uart.write(msg)
-    print(f"Sent: {msg.strip()}")
+    return msg.strip()
 
-def read_message(timeout_ms=2000):
-    start_time = time.ticks_ms()
-    received = b''
-
-    while time.ticks_diff(time.ticks_ms(), start_time) < timeout_ms:
-        data = uart.readline()
-        if data:
-            received += data
-            if b'\n' in received:
-                msg = received.decode().strip()
-                return msg
-        time.sleep_ms(10)
-    return None
+def read_message(timeout_ms: int = 50) -> str:
+    data = uart.readline()
+    if data:
+        return data.decode().strip()
+    return "nooooo"
 
 # -------------------- MAIN LOOP --------------------
+print("-" * 60)
+print(f"{'LOCAL SENDER LOG (GP26)':<30} | {'REMOTE RECEIVER LOG (GP9)'}")
+print("-" * 60)
+
 while True:
     try:
-        if IS_SENDER:
-            # Read potentiometer and send value
-            value = adc.read_u16()  # 0-65535
-            send_message(value)
-        else:
-            # Receive value and output PWM
-            msg = read_message(timeout_ms=2000)
-            if msg:
-                try:
-                    pwm_value = int(msg)
-                    # Scale 16-bit ADC value to 0-65535 for PWM duty
-                    pwm_out.duty_u16(pwm_value)
-                    print(f"Received {pwm_value}, applied to PWM")
-                except ValueError:
-                    print(f"Invalid message received: {msg}")
-            else:
-                print("No message received.")
+        # --- STEP 1: READ AND SEND ---
+        local_value = adc.read_u16()
+        sent_msg = send_message(local_value)
+
+        # --- STEP 2: RECEIVE ---
+        received_msg = read_message()
+
+        # --- STEP 3: LOG OUTPUT ---
+        send_log_output = f"Sent: {sent_msg}"
+        receive_log_output = f"Received: {received_msg}" if received_msg else "No message."
+
+        # Two-column console log
+        print(f"{send_log_output:<30} | {receive_log_output}")
 
     except Exception as e:
         print(f"ERROR: {e}")
 
-    time.sleep(0.2)
+    time.sleep(SEND_INTERVAL)
