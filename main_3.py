@@ -212,6 +212,7 @@ while True:
     try:
         user_message = input("Type your message: ")
         send_message(user_message)
+        print(f"sending {user_message}")
     except:
         print("couldn't send message")
 
