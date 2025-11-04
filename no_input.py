@@ -46,7 +46,7 @@ while True:
         if received_msg:
             receive_log_output=f"Recieved: {received_msg}"
         else:
-            print("no message")
+            print("One of the ports is closed. Waiting... ")
         
         try: 
             print(f"{send_log_output:<30} | {receive_log_output}")
