@@ -1,3 +1,5 @@
+# notes, we need to calculate the difference between the pwm values, so that if one wire is out, it accurately they pico that's recieving code, no longer recieving, takes the difference of the analog values.... 
+
 from machine import UART, Pin, ADC
 import time
 
