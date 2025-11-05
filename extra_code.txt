@@ -1,10 +1,161 @@
+#######################################################################
+##                                                                  ##
+###############                LAB 4                ###################
+##                                                                  ##
+#######################################################################
+from machine import UART, Pin
+import time
+
+uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
+uart.init(bits=8, parity=None, stop=1)
+
+
+def send_message(message): # define a function to send message
+    uart.write(message + '\n')  
+
+
+#check for messages, if there is any messages, save to data, and print recieved
+def read_message():
+    if uart.any():
+        data = uart.read()
+        if data:
+            print("Received:", data.decode())
+
+        
+
+while True: # always loop to keep checking for messages.
+    t = time.localtime() # format the time prettily
+    time_str = "{:02d}:{:02d}:{:02d}".format(t[3], t[4], t[5])  
+    send_message("KEEP_ALIVE: " + time_str) # call function to send message keep alive
+    read_message() # read the message always
+
+    try: 
+        user_message = input("Type a message: ") # takes input message
+        if user_message.strip():
+            send_message(user_message) # if there is input, send that message
+    except EOFError:
+        print("there was an error with the input") # otherwise throw an error
+        pass
+    time.sleep(0.5)
+
+#######################################################################
+##                                                                  ##
+###############           POTENTIOMETER            ###################
+##                                                                  ##
+#######################################################################
+from machine import Pin, PWM,ADC
+
+import time
+adcA = ADC(Pin(26))
+led1 = PWM(Pin(17))
+led1.freq(1000)
+
+adcB = ADC(Pin(27))
+led2 = PWM(Pin(16))
+led2.freq(1000)
+# This could also be written as: led1 = PWM(Pin(18), freq=1000)
+valueA = adcA.read_u16()
+
+print ("I got here")
+#fun thing to do: change while True to while valueA is < 50000:, [;D]
+while True:
+    valueA = adcA.read_u16()
+    valueB = adcB.read_u16()
+    print(valueA, valueB)
+    led1.duty_u16(valueA)
+    led2.duty_u16(valueB)
+    time.sleep_ms(50)
+
+#print("done")
+
+
+#######################################################################
+##                                                                  ##
+############### FMORSE CODE BLINKING ###################
+##                                                                  ##
+#######################################################################
+
+#the module machine contains the class files needed to send information between Picos
+from machine import Pin, PWM, UART
+import time
+
+#this is solely to give the user enough time to direct their eyes to the Pico which will dispaly morse code
+time.sleep(1)
+
+#a UART object with 8 data bits, no parity, and 1 stop bit
+uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
+uart.init(bits=8, parity=None, stop=1)
+
+#defining variable to the uart methods; that read and write data
+mtr = uart.read
+mts = uart.write
+
+message_toreceive = mtr
+message_tosend = mts
+
+#mts(b"Hello"), same as uart.write(b"Hello")
+
+led1 = PWM(Pin(17)) #the LED on the Pico breadboard
+#dot = led1.freq(1000) #the frequency of the dots 
+#line = led1.freq(50000) #the frequency of the lines
+
+#led1.freq(5000)
+led1.duty_u16(32768)
+
+def dot():
+#for i in range (1):
+    led1.duty_u16(32768) #the brightness of the led
+    time.sleep(.4) #the time between the dots and lines should always be set to 0.4 seconds
+    led1.duty_u16(0) #indicating the brightness of the LED during a pause
+    time.sleep(.4)
+    #print(dot)
+    return(dot)
+
+def line():
+#for i in range (1):
+    led1.duty_u16(0)
+    time.sleep(.4) #keeps the light at 0 Hz due to previous function
+    led1.duty_u16(32768)
+    time.sleep(1.5) #keeps light on at 32768 Hz due to previous function
+    led1.duty_u16(0)
+    #print(line)
+    return(line)
+
+#while I have a message to write, allow user input
+#while there is a message to receive from the other pico read me the message
+while True:
+    #If there are no messages being sent or received; return a message saying i am up to date
+    try:
+        message = input("") #sending my message to other pico
+        if message:
+            mts(message.encode()) #the messaging I am writing is sent from my TX pin to the other picos RX pin
+            print("Sent: ")
+            time.sleep(.4) #a short break inbtween me sending messages and the reading for messages
+        if uart.any():
+            data = mtr() #no data eqauals None, data  = turns into bytes. data holds the message
+            if data:
+                print("Received:", data.decode()) #translates the bytes of data to words
+            time.sleep(.4)
+    except:
+        print("*Read All Messages*")
+
+
+#######################################################################
+##                                                                  ##
+############### FIRST PROJECT IDEA EVERYTHING BELOW ###################
+##                                                                  ##
+#######################################################################
+
+
+#main 3
+
 from machine import UART, Pin, PWM, ADC, I2C
 import time
 from ads1x15 import ADS1015
 
 expected_msg_len=0
-
-##################### PWM ################################
+led1 = PWM(Pin(16), freq=(1000))
+adcA = ADC(Pin(26))
 
 
 ################ INITIALIZE UART ##########################################
@@ -66,7 +217,29 @@ def morse_to_text(morse_code):
     #print(' '.join(decoded_text))
     return ' '.join(decoded_text)
 
+################### LED BLINKING (MORSE) ######################################
+def dot():
+    led1.duty_u16(32768)   # LED ON
+    time.sleep(0.4)
+    led1.duty_u16(0)       # LED OFF
+    time.sleep(0.4)
 
+def line():
+    led1.duty_u16(32768)   # LED ON
+    time.sleep(1.2)
+    led1.duty_u16(0)       # LED OFF
+    time.sleep(0.4)
+
+def blink_morse(morse_code):
+    for symbol in morse_code:
+        if symbol == '.':
+            dot()
+        elif symbol == '-':
+            line()
+        elif symbol == ' ':
+            time.sleep(0.8)
+        elif symbol == '/':
+            time.sleep(1.5)
 
 
 ################ INITIALIZING I2C ###############################
@@ -78,7 +251,7 @@ ads1015_input_channel = 2
 
 try:
     pwm_out = PWM(Pin(18), freq=1000)
-    print(f"PWM output initialized on PIN 16")
+    print(f"PWM output initialized on PIN 18")
 except Exception as e:
     print(f"ERROR: Failed to initialize PWM output: {e}")
 
@@ -101,6 +274,9 @@ def send_message(message): # define a function to send message
     expected_msg_len = len(encoded_message) # check the lenght of what we are sending
     uart.write(encoded_message + '\n')  
 
+    print("Blinking the sent message in Morse...")
+    blink_morse(encoded_message)
+
 
 #check for messages, if there is any messages, save to data, and print recieved
 
@@ -121,6 +297,9 @@ def read_message(timeout_ms=5000):
                 message=received_morse.strip()
                 print("Received:", message)
                 print("Here is the decoded message", morse_to_text(message))
+                print("Blinking received Morse message...")
+                blink_morse(message)
+
                 expected_msg_len = 0 # after your'e done, clear up t he expected_msg_len
                 return message
             
@@ -177,20 +356,34 @@ def handle_user_choice():
 # Ensure all global variables (expected_msg_len, adc, ADS1015_INPUT_CHANNEL)
 # are defined at the top of your main.py file.
 
-while True:
+user_message = input("Type your message: ")
+
+while True: 
+    try:
+        send_message(user_message)
+        print(f"sending {user_message}")
+    except:
+        print("couldn't send message")
+
+    if uart.any():
+        read_message()
+        time.sleep(0.3)
+
+
+
+"""while True:
     try: 
         action_occurred = handle_user_choice()
         
         if action_occurred:
             time.sleep(0.1)
-        if action_occurred:
             print("Action completed. Checking for confirmation/reply...")
             recieved_reply = read_message(timeout_ms=5000)
             
             if recieved_reply is None and expected_msg_len > 0:
 
                 raise ValueError("ERROR: Timeout reached. No reply was recieved from UART. Please check your hardware")
-            else:
+            elif recieved_reply is None:
                 print("You didn't recieve a message")
             
     except EOFError:
@@ -205,3 +398,4 @@ while True:
     time.sleep(0.5) # General loop delay
 
     time.sleep(0.5)
+"""
