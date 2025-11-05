@@ -24,7 +24,7 @@ def send_message(value):
 def read_message():
     data = uart.readline()
     if data:
-        return data.decode().strip()
+        return data.decode().strip() # type: ignore
     return None
 
 
