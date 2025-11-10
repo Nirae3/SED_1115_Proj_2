@@ -39,7 +39,7 @@ def read_message():
         return data.decode().strip() # type: ignore
     return None
 
-
+last_valid_time = time.time()
 ################################ MAIN ###############################
 
 print("___________________________________________________________")
