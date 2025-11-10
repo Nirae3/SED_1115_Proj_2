@@ -57,7 +57,12 @@ while True:
             receive_log_output=f"Recieved: {received_msg}"
         else:
             print("One of the ports is closed. Waiting... ")
-        
+            # Check how long since last valid message
+            if time.time() - last_valid_time > 5:
+                print("⚠️  Signal Lost: No valid data received for 5 seconds.")
+            else:
+                print(f"Sent: {adc_value:<10} | Waiting for data...")
+
         try: 
             print(f"{send_log_output:<50} | {receive_log_output}")
         except: 
