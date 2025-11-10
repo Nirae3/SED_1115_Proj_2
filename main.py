@@ -3,6 +3,18 @@
 from machine import UART, Pin, ADC
 import time
 
+
+# note we need to add a time-out for the reciever. If data hasn't been sent for 2 seconds
+# it needs to throw an error.
+
+"""
+def timee_out_detect():
+    wait for ack. 
+    for i in range(2 seconds):
+        data didn't arrive
+        return ("No data recieved")
+"""
+
 ###### UART and ADC initilizations #####################
 try:
     uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
@@ -47,7 +59,7 @@ while True:
             print("One of the ports is closed. Waiting... ")
         
         try: 
-            print(f"{send_log_output:<30} | {receive_log_output}")
+            print(f"{send_log_output:<50} | {receive_log_output}")
         except: 
             print("waiting for both picos to come back up")
             time.sleep(2)
