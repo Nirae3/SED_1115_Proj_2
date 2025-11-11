@@ -37,7 +37,7 @@ print("__________________________________________________________")
 
 while True:
     try:
-        adc_value = adc1.value
+        adc_value = adc1.adc.read(0, adc1.ADS1015_PWM)
         pwm.duty_u16(adc_value)
         sent_msg = send_message(adc_value)
         send_log_output = f"Sent: {sent_msg}"
