@@ -16,15 +16,13 @@ print(f"Potentiometer Reader initialized")
 # PWM setup
 pwm_pin = Pin(16)              
 pwm = PWM(pwm_pin)
-pwm.freq(1000)                 # 1 kHz frequency (adjust as needed)
+pwm.freq(1000)            
 print("PWM output initialized on Pin 16")
 
 last_valid_time = time.time()   # last validated time
 previous_pwm_value = 0         # previous pwm value
 
-################################
 # SEND / RECEIVE FUNCTIONS
-################################
 def send_message(value):
     msg = f"{value}\n"
     uart.write(msg)
@@ -36,7 +34,6 @@ def read_message():
         return data.decode().strip() # type: ignore 
     return None
 
-
 # MAIN LOOP
 print("___________________________________________________________")
 print("      SENDER          |          RECEIVER         ")
@@ -45,39 +42,37 @@ print("__________________________________________________________")
 while True:
     try:
         adc_value = adc.read_u16()  
-        pwm.duty_u16(adc_value)      # Output PWM signal proportional to ADC value
+        pwm.duty_u16(adc_value)
 
         sent_msg = send_message(adc_value)
         send_log_output = f"Sent: {sent_msg}"
+        receive_log_output = "---"  # Default log
 
         received_msg = read_message()
+
         if received_msg:
             receive_log_output = f"Received: {received_msg}"
             last_valid_time = time.time()
-
+            
+            # Data corruption check (Assuming receiver echoes)
             try:
                 received_value = int(received_msg)
                 pwm_diff = abs(adc_value - received_value)
-                if pwm_diff > 1000:   # Threshold — tweak as needed
-                    print(f" PWM difference detected: {pwm_diff}")
+                if pwm_diff > 1000:
+                    receive_log_output += f" (DIFF: {pwm_diff}!)"
             except ValueError:
-                print("Received non-numeric data")
+                receive_log_output += " (Bad Data!)"
 
-        else:
-            # No data — check timeout
-            print("One of the ports is closed. Waiting... ")
-            if time.time() - last_valid_time > 5:
-                print("🚨 Signal Lost: No valid data received for 5 seconds.")
-            else:
-                print(f"Sent: {adc_value:<10} | Waiting for data...")
+        # Check for timeout if no data was received
+        if time.time() - last_valid_time > 5:
+            print("\n!!! SIGNAL LOST: No valid data received for 5 seconds. !!!\n")
+            # Consider adding a "safe mode" action here (e.g., pwm.duty_u16(0))
 
-        try:
-            print(f"{send_log_output:<30} | {receive_log_output if received_msg else '---':<30} | PWM: {adc_value:<10}")
-        except:
-            print("waiting for both picos to come back up")
-            time.sleep(2)
+        # Log the current status
+        print(f"{send_log_output:<30} | {receive_log_output:<30} | PWM Value: {adc_value}")
 
     except Exception as e:
-        print(f"ERROR: {e}")
+        print(f"CRITICAL ERROR: {e}")
+        time.sleep(1)
 
-    time.sleep(0.5)
+    time.sleep(0.3) # Increased refresh rate for better responsiveness
