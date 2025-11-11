@@ -1,5 +1,7 @@
-from machine import UART, Pin, ADC, PWM
+from machine import UART, Pin, PWM, ADC, I2C
 import time
+from ads1x15 import ADS1015
+import adc1
 
 # UART setup
 try:
@@ -9,15 +11,9 @@ try:
 except Exception as e:
     print(f"UART initialization failed: {e}")
 
-# ADC setup
-adc = ADC(Pin(26))
-print(f"Potentiometer Reader initialized")
-
 # PWM setup
-pwm_pin = Pin(16)              
-pwm = PWM(pwm_pin)
-pwm.freq(1000)            
-print("PWM output initialized on Pin 16")
+pwm = PWM(Pin(26), freq=(1000))       
+print("PWM output initialized on Pin 26")
 
 last_valid_time = time.time()   # last validated time
 previous_pwm_value = 0         # previous pwm value
@@ -41,27 +37,29 @@ print("__________________________________________________________")
 
 while True:
     try:
-        adc_value = adc.read_u16()  
+        adc_value = adc1.value
         pwm.duty_u16(adc_value)
-
         sent_msg = send_message(adc_value)
         send_log_output = f"Sent: {sent_msg}"
         receive_log_output = "---"  # Default log
+        adc_diff = 0
 
         received_msg = read_message()
 
         if received_msg:
             receive_log_output = f"Received: {received_msg}"
             last_valid_time = time.time()
-            
+            adc_diff = adc_value - received_msg
+            if adc_diff >= 1000:
+                print("\n ADC diff too big")
+            else: 
+                print("\n diff all good")
 
         if time.time() - last_valid_time > 5:
             print("\nSIGNAL LOST: No valid data received for 5 seconds. !!!\n")
             pwm.duty_u16(0) # after 5 seconds do the following
             receive_log_output = "Link Timeout - switching to pwm value #0"
-
-        # Log the current status
-        print(f"{send_log_output:<30} | {receive_log_output:<30} | PWM Value: {pwm.duty_u16(adc_value)}")
+        print(f"{send_log_output:<30} | {receive_log_output:<30} | PWM Value: {adc1.value}")
 
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
