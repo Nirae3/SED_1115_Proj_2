@@ -1,6 +1,10 @@
 from machine import UART, Pin, ADC, PWM
 import time
 
+# --- Configuration ---
+TIMEOUT_SECONDS = 5  # <-- DEFINED HERE
+SAFE_PWM_DUTY = 0    # Set PWM to 0% duty cycle (OFF) in case of signal loss
+
 # UART setup
 try:
     uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
@@ -14,13 +18,12 @@ adc = ADC(Pin(26))
 print(f"Potentiometer Reader initialized")
 
 # PWM setup
-pwm_pin = Pin(16)              
+pwm_pin = Pin(16) 
 pwm = PWM(pwm_pin)
-pwm.freq(1000)            
+pwm.freq(1000) 
 print("PWM output initialized on Pin 16")
 
-last_valid_time = time.time()   # last validated time
-previous_pwm_value = 0         # previous pwm value
+last_valid_time = time.time()  # last time any data was successfully received
 
 # SEND / RECEIVE FUNCTIONS
 def send_message(value):
@@ -31,13 +34,13 @@ def send_message(value):
 def read_message():
     data = uart.readline()
     if data:
-        return data.decode().strip() # type: ignore 
+        return data.decode().strip()
     return None
 
 # MAIN LOOP
 print("___________________________________________________________")
-print("      SENDER          |          RECEIVER         ")
-print("__________________________________________________________")
+print("           SENDER            |           RECEIVER          ")
+print("___________________________________________________________")
 
 while True:
     try:
@@ -57,11 +60,8 @@ while True:
             receive_log_output = f"Received: {received_msg}"
             last_valid_time = time.time()
             
-            # --- REMOVED THE IRRELEVANT PWM_DIFF CHECK ---
-            # We assume the received data is valid from the other Pico's ADC.
             try:
-                # Optionally, you can convert the received string to int 
-                # if you needed to use it for anything locally.
+                # Optionally, convert the received string to int for logging/use
                 received_value = int(received_msg)
             except ValueError:
                 receive_log_output = "Received: Invalid (non-numeric) Data"
