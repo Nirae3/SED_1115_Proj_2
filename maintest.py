@@ -12,8 +12,8 @@ except Exception as e:
     print(f"UART initialization failed: {e}")
 
 # PWM setup
-pwm = PWM(Pin(26), freq=(1000))       
-print("PWM output initialized on Pin 26")
+pwm = PWM(Pin(17), freq=(1000))       
+print("PWM output initialized on Pin 17")
 
 last_valid_time = time.time()   # last validated time
 previous_pwm_value = 0         # previous pwm value
