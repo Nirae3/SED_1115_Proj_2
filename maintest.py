@@ -1,7 +1,7 @@
-from machine import UART, Pin, ADC
+from machine import UART, Pin, ADC, PWM
 import time
 
-###### UART and ADC initializations #####################
+# UART setup
 try:
     uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
     uart.init(bits=8, parity=None, stop=1)
@@ -9,11 +9,22 @@ try:
 except Exception as e:
     print(f"UART initialization failed: {e}")
 
+# ADC setup (to read analog values)
 adc = ADC(Pin(26))
 print(f"Potentiometer Reader initialized")
 
-################################  SEND / RECEIVE FUNCTION ###############################
+# PWM setup (to output analog-equivalent signal)
+pwm_pin = Pin(15)              # PWM output pin (choose an available GPIO)
+pwm = PWM(pwm_pin)
+pwm.freq(1000)                 # 1 kHz frequency (adjust as needed)
+print("PWM output initialized on Pin 15")
 
+last_valid_time = time.time()
+previous_pwm_value = 0         # To store last PWM value for comparison
+
+################################
+# SEND / RECEIVE FUNCTIONS
+################################
 def send_message(value):
     msg = f"{value}\n"
     uart.write(msg)
@@ -22,70 +33,58 @@ def send_message(value):
 def read_message():
     data = uart.readline()
     if data:
-        try:
-            return int(data.decode().strip())  # Convert received ADC string to int
-        except:
-            return None
+        return data.decode().strip()
     return None
 
-################################ MAIN ###############################
-
-last_valid_time = time.time()
-signal_lost = False
-mismatch_count = 0
-DIFF_THRESHOLD = 3000       # ADC difference threshold
-TIMEOUT_SECONDS = 2         # Timeout for UART
-MAX_MISMATCHES = 3          # Consecutive mismatch readings before error
-
+################################
+# MAIN LOOP
+################################
 print("___________________________________________________________")
-print("      SENDER          |          RECEIVER         | STATUS")
+print("      SENDER          |          RECEIVER         ")
 print("__________________________________________________________")
 
 while True:
     try:
-        adc_value = adc.read_u16()
+        # --- READ from ADC ---
+        adc_value = adc.read_u16()   # 0–65535 range
+
+        # --- MAP ADC to PWM ---
+        pwm.duty_u16(adc_value)      # Output PWM signal proportional to ADC value
+
+        # --- SEND value over UART ---
         sent_msg = send_message(adc_value)
-        send_log_output = f"Sent: {sent_msg}"  # send output
-        received_value = read_message()
+        send_log_output = f"Sent: {sent_msg}"
 
-        if received_value is not None:
-            diff = abs(adc_value - received_value)
-            receive_log_output = f"Received: {received_value} | Δ={diff}"
-
-            # Reset last valid time
+        # --- RECEIVE data ---
+        received_msg = read_message()
+        if received_msg:
+            receive_log_output = f"Received: {received_msg}"
             last_valid_time = time.time()
 
-            # Check for analog mismatch
-            if diff > DIFF_THRESHOLD:
-                mismatch_count += 1
-                status = f"⚠️ Analog mismatch ({mismatch_count}/{MAX_MISMATCHES})"
-            else:
-                mismatch_count = 0
-                status = "✅ OK"
-
-            # If mismatch persists, declare signal lost
-            if mismatch_count >= MAX_MISMATCHES:
-                status = "💥 ERROR: PWM/Voltage link issue detected!"
-                signal_lost = True
-            else:
-                signal_lost = False
+            # --- Compare PWM difference ---
+            try:
+                received_value = int(received_msg)
+                pwm_diff = abs(adc_value - received_value)
+                if pwm_diff > 1000:   # Threshold — tweak as needed
+                    print(f"⚠️  PWM difference detected: {pwm_diff}")
+            except ValueError:
+                print("Received non-numeric data")
 
         else:
-            receive_log_output = "No data received"
-            # Check timeout
-            if time.time() - last_valid_time > TIMEOUT_SECONDS:
-                status = "💥 ERROR: UART disconnected or signal lost!"
-                signal_lost = True
+            # No data — check timeout
+            print("One of the ports is closed. Waiting... ")
+            if time.time() - last_valid_time > 5:
+                print("🚨 Signal Lost: No valid data received for 5 seconds.")
             else:
-                status = "⌛ Waiting for data..."
+                print(f"Sent: {adc_value:<10} | Waiting for data...")
 
         try:
-            print(f"{send_log_output:<30} | {receive_log_output:<30} | {status}")
+            print(f"{send_log_output:<30} | {receive_log_output if received_msg else '---':<30} | PWM: {adc_value:<10}")
         except:
-            print("Waiting for both Picos to come back up")
+            print("waiting for both picos to come back up")
             time.sleep(2)
 
     except Exception as e:
         print(f"ERROR: {e}")
 
-    time.sleep(1)
+    time.sleep(0.5)

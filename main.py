@@ -39,7 +39,7 @@ def read_message():
         return data.decode().strip() # type: ignore
     return None
 
-last_valid_time = time.time()
+last_valid_time = time.time() # get current time
 ################################ MAIN ###############################
 
 print("___________________________________________________________")
@@ -57,14 +57,13 @@ while True:
             receive_log_output=f"Recieved: {received_msg}"
         else:
             print("One of the ports is closed. Waiting... ")
-            # Check how long since last valid message
-            if time.time() - last_valid_time > 5:
-                print("⚠️  Signal Lost: No valid data received for 5 seconds.")
+            if time.time() - last_valid_time > 5: #if current time - last validated time >5, throw error
+                print("Signal Lost: No valid data received for 5 seconds.")
             else:
                 print(f"Sent: {adc_value:<10} | Waiting for data...")
 
         try: 
-            print(f"{send_log_output:<50} | {receive_log_output}")
+            print(f"{send_log_output:<30} | {receive_log_output :<30} | ADC: {adc_value :< 30} | UART: {uart.readline()}")
         except: 
             print("waiting for both picos to come back up")
             time.sleep(2)
