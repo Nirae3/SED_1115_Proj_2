@@ -7,18 +7,17 @@ try:
     uart.init(bits=8, parity=None, stop=1)
     print("✅ UART initialized")
 except Exception as e:
-    print(f"❌ UART init failed: {e}")
+    print(f"❌ UART initialization failed: {e}")
 
 adc = ADC(Pin(26))
 print("✅ Potentiometer Reader initialized")
 
-# Function to send ADC value
+# Send / receive functions
 def send_message(value):
     msg = f"DATA:{value}\n"
     uart.write(msg)
     return msg.strip()
 
-# Function to read incoming UART message
 def read_message():
     data = uart.readline()
     if data:
@@ -30,34 +29,38 @@ def read_message():
             pass
     return None
 
-# Track last time we got a valid message
+# --- Main loop ---
 last_valid_time = time.time()
+signal_lost = False
 
 print("___________________________________________________________")
-print("      SENDER          |          RECEIVER         ")
+print("      SENDER          |          RECEIVER         |  STATUS")
 print("___________________________________________________________")
 
 while True:
     try:
-        # Read potentiometer and send it
+        # Read and send ADC
         adc_value = adc.read_u16()
         send_message(adc_value)
 
-        # Try to read from the other Pico
+        # Read incoming data
         received_value = read_message()
 
-        # If we got valid data, print and reset timer
+        # Check for valid message
         if received_value is not None:
-            print(f"Sent: {adc_value:<10} | Received: {received_value}")
+            diff = abs(adc_value - received_value)
+            print(f"Sent: {adc_value:<10} | Received: {received_value:<10} | Δ={diff}")
             last_valid_time = time.time()
+            signal_lost = False
         else:
-            # Check how long since last valid message
-            if time.time() - last_valid_time > 5:
-                print("⚠️  Signal Lost: No valid data received for 5 seconds.")
+            if time.time() - last_valid_time > 2 and not signal_lost:
+                print("⚠️  ERROR: Signal lost - no valid data received for >2s.")
+                signal_lost = True
             else:
                 print(f"Sent: {adc_value:<10} | Waiting for data...")
 
     except Exception as e:
-        print(f"ERROR: {e}")
+        print(f"💥 ERROR: {e}")
 
     time.sleep(1)
+
