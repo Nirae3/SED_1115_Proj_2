@@ -42,14 +42,13 @@ while True:
         sent_msg = send_message(adc_value)
         send_log_output = f"Sent: {sent_msg}"
         receive_log_output = "---"  # Default log
-        adc_diff = 0
 
         received_msg = read_message()
 
         if received_msg:
             receive_log_output = f"Received: {received_msg}"
             last_valid_time = time.time()
-            adc_diff = adc_value - received_msg
+            adc_diff = adc_value - int(received_msg)
             if adc_diff >= 1000:
                 print("\n ADC diff too big")
             else: 
