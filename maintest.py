@@ -9,18 +9,18 @@ try:
 except Exception as e:
     print(f"UART initialization failed: {e}")
 
-# ADC setup (to read analog values)
+# ADC setup
 adc = ADC(Pin(26))
 print(f"Potentiometer Reader initialized")
 
-# PWM setup (to output analog-equivalent signal)
-pwm_pin = Pin(15)              # PWM output pin (choose an available GPIO)
+# PWM setup
+pwm_pin = Pin(16)              
 pwm = PWM(pwm_pin)
 pwm.freq(1000)                 # 1 kHz frequency (adjust as needed)
-print("PWM output initialized on Pin 15")
+print("PWM output initialized on Pin 16")
 
-last_valid_time = time.time()
-previous_pwm_value = 0         # To store last PWM value for comparison
+last_valid_time = time.time()   # last validated time
+previous_pwm_value = 0         # previous pwm value
 
 ################################
 # SEND / RECEIVE FUNCTIONS
@@ -33,40 +33,33 @@ def send_message(value):
 def read_message():
     data = uart.readline()
     if data:
-        return data.decode().strip()
+        return data.decode().strip() # type: ignore 
     return None
 
-################################
+
 # MAIN LOOP
-################################
 print("___________________________________________________________")
 print("      SENDER          |          RECEIVER         ")
 print("__________________________________________________________")
 
 while True:
     try:
-        # --- READ from ADC ---
-        adc_value = adc.read_u16()   # 0–65535 range
-
-        # --- MAP ADC to PWM ---
+        adc_value = adc.read_u16()  
         pwm.duty_u16(adc_value)      # Output PWM signal proportional to ADC value
 
-        # --- SEND value over UART ---
         sent_msg = send_message(adc_value)
         send_log_output = f"Sent: {sent_msg}"
 
-        # --- RECEIVE data ---
         received_msg = read_message()
         if received_msg:
             receive_log_output = f"Received: {received_msg}"
             last_valid_time = time.time()
 
-            # --- Compare PWM difference ---
             try:
                 received_value = int(received_msg)
                 pwm_diff = abs(adc_value - received_value)
                 if pwm_diff > 1000:   # Threshold — tweak as needed
-                    print(f"⚠️  PWM difference detected: {pwm_diff}")
+                    print(f" PWM difference detected: {pwm_diff}")
             except ValueError:
                 print("Received non-numeric data")
 
