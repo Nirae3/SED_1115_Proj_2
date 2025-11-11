@@ -65,4 +65,4 @@ while True:
         print(f"CRITICAL ERROR: {e}")
         time.sleep(1)
 
-    time.sleep(0.3) # Increased refresh rate for better responsiveness
+    time.sleep(0.3) 
