@@ -41,38 +41,48 @@ print("__________________________________________________________")
 
 while True:
     try:
+        # Read local ADC and drive local PWM
         adc_value = adc.read_u16()  
-        pwm.duty_u16(adc_value)
+        pwm.duty_u16(adc_value) 
 
+        # Send our local ADC value to the other Pico
         sent_msg = send_message(adc_value)
         send_log_output = f"Sent: {sent_msg}"
-        receive_log_output = "---"  # Default log
+        receive_log_output = "No Data Yet"  # Default log
 
+        # Try to read data from the other Pico
         received_msg = read_message()
 
         if received_msg:
             receive_log_output = f"Received: {received_msg}"
             last_valid_time = time.time()
             
-            # Data corruption check (Assuming receiver echoes)
+            # --- REMOVED THE IRRELEVANT PWM_DIFF CHECK ---
+            # We assume the received data is valid from the other Pico's ADC.
             try:
+                # Optionally, you can convert the received string to int 
+                # if you needed to use it for anything locally.
                 received_value = int(received_msg)
-                pwm_diff = abs(adc_value - received_value)
-                if pwm_diff > 1000:
-                    receive_log_output += f" (DIFF: {pwm_diff}!)"
             except ValueError:
-                receive_log_output += " (Bad Data!)"
-
-        # Check for timeout if no data was received
-        if time.time() - last_valid_time > 5:
-            print("\n!!! SIGNAL LOST: No valid data received for 5 seconds. !!!\n")
-            # Consider adding a "safe mode" action here (e.g., pwm.duty_u16(0))
-
+                receive_log_output = "Received: Invalid (non-numeric) Data"
+        
+        # --- LINK RELIABILITY & SAFE MODE LOGIC ---
+        
+        time_since_last_valid = time.time() - last_valid_time
+        
+        if time_since_last_valid > TIMEOUT_SECONDS:
+            # If the link has been lost for longer than the timeout:
+            print(f"\n!!! SIGNAL LOST ({TIMEOUT_SECONDS}s+): Executing SAFE MODE !!!\n")
+            # Set the local PWM to a safe state (e.g., turn it off)
+            pwm.duty_u16(SAFE_PWM_DUTY) 
+            receive_log_output = "Link Timeout - SAFE MODE ON"
+        
         # Log the current status
-        print(f"{send_log_output:<30} | {receive_log_output:<30} | PWM Value: {adc_value}")
+        print(f"{send_log_output:<30} | {receive_log_output:<30} | My PWM Value: {adc_value:<10} | Time Delta: {time_since_last_valid:.2f}s")
 
     except Exception as e:
-        print(f"CRITICAL ERROR: {e}")
+        # Catches major hardware or communication errors and prevents a crash
+        print(f"CRITICAL ERROR: {e}. Waiting for recovery.")
         time.sleep(1)
 
-    time.sleep(0.3) # Increased refresh rate for better responsiveness
+    time.sleep(0.3)
