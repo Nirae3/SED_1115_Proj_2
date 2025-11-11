@@ -61,7 +61,7 @@ while True:
             receive_log_output = "Link Timeout - switching to pwm value #0"
 
         # Log the current status
-        print(f"{send_log_output:<30} | {receive_log_output:<30} | PWM Value: {adc_value}")
+        print(f"{send_log_output:<30} | {receive_log_output:<30} | PWM Value: {pwm.duty_u16(adc_value)}")
 
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
