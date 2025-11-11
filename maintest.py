@@ -56,8 +56,6 @@ while True:
 
         if time.time() - last_valid_time > 5:
             print("\nSIGNAL LOST: No valid data received for 5 seconds. !!!\n")
-            pwm.duty_u16(0) # after 5 seconds do the following
-            receive_log_output = "Link Timeout - switching to pwm value #0"
         print(f"{send_log_output:<30} | {receive_log_output:<30} | PWM Value: {adc1.value}")
 
     except Exception as e:
