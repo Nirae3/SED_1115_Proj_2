@@ -38,6 +38,8 @@ print("__________________________________________________________")
 while True:
     try:
         adc_value = adc1.adc.read(0, adc1.ADS1015_PWM)
+        print(adc_value)
+
         pwm.duty_u16(adc_value)
         sent_msg = send_message(adc_value)
         send_log_output = f"Sent: {sent_msg}"
@@ -56,7 +58,7 @@ while True:
 
         if time.time() - last_valid_time > 5:
             print("\nSIGNAL LOST: No valid data received for 5 seconds. !!!\n")
-        print(f"{send_log_output:<30} | {receive_log_output:<30} | PWM Value: {adc1.value}")
+        print(f"{send_log_output:<30} | {receive_log_output:<30} | PWM Value: {adc_value}")
 
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
