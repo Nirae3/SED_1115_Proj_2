@@ -9,44 +9,35 @@ RECIEVE PICO()
 
 from machine import PWM, UART, Pin, ADC
 import time
+from adc1 import adc, ADS1015_PWM
 
 uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
 uart.init(bits=8, parity=None, stop=1) 
 
-adcA = ADC(Pin(26))
+# adcA = ADC(Pin(26)) I DON'T THINK I MAY NEED THIS? 
 pwm_singal = PWM(Pin(18), freq=1000) #automatically generates PWM signal on pin 18
 
-
-
 def get_pwm_value(): 
-    pwm_value = adcA.read_u16()
-    #print(pwm_value)
+    pwm_value = adc.read(0, ADS1015_PWM)
     return pwm_value
-    #pwm_singal.duty_u16(pwm_value)   DON'T THINK WE NEED THIS
 
 def compare_pwm_values(desired_value: int, pwm_value: int):
     diff = desired_value - pwm_value
     return diff
 
- 
-break_point = "\n".encode() 
 while True:
-    pwm_value = get_pwm_value()
-    decoded_pwm_value = str(pwm_value)
-    uart.write(decoded_pwm_value.encode()) # send the converted PWM value
-    recieved_data = b""
+    measured_pwm_value = get_pwm_value()
+    echo_pwm_value = str(measured_pwm_value).encode()
+    uart.write(echo_pwm_value) # send the converted PWM value
     if uart.any():
-        byte = uart.read(1)
-        if byte == break_point:
-            break
-        recieved_data += byte
-    else: print("___")
+        recieved_pwm_value = uart.read()
+        try: 
+            ORIG_SENT_MESSAGE = recieved_pwm_value.decode().strip() # type: ignore
+            print(f"Send UART message:{ORIG_SENT_MESSAGE}")
+        except Exception as e:
+            print("Recieved undecodable data")
+        print(f"I SENT: {recieved_pwm_value.decode()}") #type: ignore
+    else: print("__N/A__")
 
-    print(f"Recieved: {pwm_value :<30}") #type:ignore
+    print(f"Recieved: {measured_pwm_value :<30}") #type:ignore
     time.sleep(0.5) 
-
-"""
-send pwm_values it gets
-
-once the reciever gets pwm_values, pring it
-"""
