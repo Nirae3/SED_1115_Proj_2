@@ -1,20 +1,10 @@
-"""
-RECIEVE PICO()
-
-1. gets the desired PWM value = duty cycle from UART
-2. trIgger ADC to measure raw recieved PWM signal to get PWM value  
-3. compare recieved PWM value (duty cycle) with desired PWM value (duty cycle) get difference
-4. send meaasured PWM value value back to sender
-"""
-
-from machine import PWM, UART, Pin, ADC
+from machine import PWM, UART, Pin
 import time
-#from adc1 import adc, ADS1015_PWM
+from adc1 import adc, ADS1015_PWM
 
 uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
 uart.init(bits=8, parity=None, stop=1) 
 
-adcA = ADC(Pin(26)) #I DON'T THINK I MAY NEED THIS? 
 pwm_singal = PWM(Pin(18), freq=1000) #automatically generates PWM signal on pin 18
 
 
@@ -29,14 +19,13 @@ def send_message():
             print("recieved undecodable data")
             return None
     else:
-        print("___N/A___")
         return None
     
 
 
 while True:
-    desired_value = adcA.read_u16()
-    echo_pwm_value = str(desired_value).encode()
+    desired_value = adc.read(0, ADS1015_PWM)
+    echo_pwm_value = (str(desired_value) + '\n').encode()
     uart.write(echo_pwm_value) # send the converted PWM value
     ORIG_SENT_MESSAGE = send_message()
     if ORIG_SENT_MESSAGE is None:
