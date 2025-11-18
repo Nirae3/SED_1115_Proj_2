@@ -9,16 +9,16 @@ RECIEVE PICO()
 
 from machine import PWM, UART, Pin, ADC
 import time
-from adc1 import adc, ADS1015_PWM
+#from adc1 import adc, ADS1015_PWM
 
 uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
 uart.init(bits=8, parity=None, stop=1) 
 
-# adcA = ADC(Pin(26)) I DON'T THINK I MAY NEED THIS? 
+adcA = ADC(Pin(26)) #I DON'T THINK I MAY NEED THIS? 
 pwm_singal = PWM(Pin(18), freq=1000) #automatically generates PWM signal on pin 18
 
 def get_pwm_value(): 
-    pwm_value = adc.read(0, ADS1015_PWM)
+    pwm_value = adcA.read_u16
     return pwm_value
 
 def compare_pwm_values(desired_value: int, pwm_value: int):
