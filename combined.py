@@ -45,7 +45,7 @@ while True:
 
         uart.write((str(desired_pot_value) + "\n").encode()) #sending the PWM value via UART
 
-        measured_signal_value_raw = external_adc.read(0, ADS1015_PWM) #receiving and storing the measured analog value in the external_adc variable
+        measured_signal_value_raw = external_adc.read(0, ADS1015_PWM) #receiving and storing the measured analog value in the external_adc variable. ADS1015 reads analot volatge on AINO0 pin
 
         adjusted_raw = max(0, measured_signal_value_raw - ADS_MIN_RAW) #setting the maximum signal that can be sent through at a time
         measured_signal_value = int(adjusted_raw * SCALING_FACTOR) #turning th analog values to an integer

@@ -21,13 +21,15 @@ pwm_singal = PWM(Pin(16), freq=1000) #automatically generates PWM signal on pin 
 
 last_interrupt_time = time.ticks_ms()
 
+
 def handle_interrupt(pin):
     global last_interrupt_time
     last_interrupt_time = time.ticks_ms()
 #    last_interrupt_time.irq(trigger=Pin.IRQ_RISING, handler=handle_interrupt)
 
-interrupt_pin = Pin(21, Pin.IN)
+interrupt_pin = Pin(0, Pin.IN, Pin.PULL_DOWN) 
 interrupt_pin.irq(trigger=Pin.IRQ_RISING, handler=handle_interrupt)
+
 
 #for reaceiving values from the other pico
 def read_uart_line(uart, timeout=2):
@@ -73,6 +75,9 @@ while True:
             PWM_timeout = "PWM TIMED OUT"
         else:
             PWM_timeout = "PWM OK"
+
+
+
 
         if difference > 3000 or difference < -3000:
             print("Error! PWM signal connection lost, check wires")
