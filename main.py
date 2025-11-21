@@ -40,11 +40,13 @@ SCALING_FACTOR = 41.5 # SCALING_FACTOR = 65535 / (  (ADS_MAX)/32  -  (ADS_MIN)/3
 
 while True:
     try:
-        desired_pot_value = adc_pot.read_u16() #reads from potentiometer, 
+        desired_pot_value = adc_pot.read_u16() #reads from potentiometer, DUTY CYCLE
         pwm_singal.duty_u16(desired_pot_value) #generate PWM signal
+        print(f"desired {desired_pot_value}")
 
         uart.write((str(desired_pot_value) + "\n").encode()) #sending the PWM value via UART
         measured_signal_value_raw = external_adc.read(0, ADS1015_PWM) #receiving and storing the measured analog value in the external_adc variable. ADS1015 reads analot volatge on AINO0 pin
+        print(f"external ADC : {uart.write(str(measured_signal_value_raw).encode())}")
 
         adjusted_raw = max(0, measured_signal_value_raw - ADS_MIN_RAW) #setting the maximum signal that can be sent through at a time
         measured_signal_value = int(adjusted_raw * SCALING_FACTOR) #turning th analog values to an integer
@@ -52,12 +54,12 @@ while True:
         
         measured_uart_value = read_uart_line(uart) #reading the value gotten through uart
         
-
+        print(f"measured uart value =  {measured_uart_value}")
         difference = measured_uart_value - measured_signal_value #getting the difference in the value sent and the on received
         if difference > 3000 or difference < -3000:
             print("Error! PWM signal connection lost, check wires")
 
-        print(f"desired raw pwm signal: {desired_pot_value: <30} | value i got back from partenr: {uart.write(str(measured_signal_value_raw).encode())}")
+#        print(f"desired raw pwm signal: {desired_pot_value: <30} | value i got back from partenr: {uart.read_uart_line(str(measured_signal_value_raw).encode())}")
         #print(f"Desired raw PWM: {desired_pot_value :<10} | Actually sent: {uart.write(str(measured_signal_value_raw).encode())}| Supposed to Recieve: {measured_uart_value: <10} | Measured PWM: {measured_signal_value :<10} | Diff: {difference :<10}" ) 
         time.sleep(0.5)
         
