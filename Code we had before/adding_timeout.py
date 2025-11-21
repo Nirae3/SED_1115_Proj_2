@@ -27,7 +27,7 @@ def handle_interrupt(pin):
     last_interrupt_time = time.ticks_ms()
 #    last_interrupt_time.irq(trigger=Pin.IRQ_RISING, handler=handle_interrupt)
 
-interrupt_pin = Pin(0, Pin.IN, Pin.PULL_DOWN) 
+interrupt_pin = Pin(16, Pin.IN, Pin.PULL_DOWN) 
 interrupt_pin.irq(trigger=Pin.IRQ_RISING, handler=handle_interrupt)
 
 
