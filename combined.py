@@ -55,8 +55,8 @@ while True:
 
         difference = measured_uart_value - measured_signal_value #getting the difference in the value sent and the on received
 
-        print(f"Desired raw PWM: {desired_pot_value :<10} | Measured PWM: {measured_signal_value :<10} | UART Recieved: {measured_uart_value: <10}| Diff: {difference :<10} | Scaling {SCALING_FACTOR}" ) 
-        #time.sleep(0.1)
+        print(f"Desired raw PWM: {desired_pot_value :<10} | Supposed to Recieve: {measured_uart_value: <10} | Measured PWM: {measured_signal_value :<10} | Diff: {difference :<10}" ) 
+        time.sleep(0.5)
 
     except OSError as e: #this catches any errors with the ADC / PWM conversion
         print("Error reading from ADS1015! Check wires")
