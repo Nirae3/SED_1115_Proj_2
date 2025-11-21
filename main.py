@@ -44,18 +44,26 @@ while True:
         pwm_singal.duty_u16(desired_pot_value) #generate PWM signal
         print(f"desired {desired_pot_value}")
 
-        uart.write((str(desired_pot_value) + "\n").encode()) #sending the PWM value via UART
+        #uart.write((str(desired_pot_value) + "\n").encode()) #sending the PWM value via UART
+        
         measured_signal_value_raw = external_adc.read(0, ADS1015_PWM) #receiving and storing the measured analog value in the external_adc variable. ADS1015 reads analot volatge on AINO0 pin
-        print(f"external ADC : {uart.write(str(measured_signal_value_raw).encode())}")
+        time.sleep(0.1)
+        uart.write((str(measured_signal_value_raw) + "\n").encode()) #sending the PWM value via UART
+       
+       # print(f"external ADC : {uart.write(str(measured_signal_value_raw).encode())}")
+        
+        print(f"sent value on UART external:  {measured_signal_value_raw}")
+
 
         adjusted_raw = max(0, measured_signal_value_raw - ADS_MIN_RAW) #setting the maximum signal that can be sent through at a time
         measured_signal_value = int(adjusted_raw * SCALING_FACTOR) #turning th analog values to an integer
         measured_signal_value = min(measured_signal_value, 65535) ##setting the minimum signal that can be sent through at a time
         
         measured_uart_value = read_uart_line(uart) #reading the value gotten through uart
+        print("recieved UART value is: ",measured_uart_value)
         
-        print(f"measured uart value =  {measured_uart_value}")
-        difference = measured_uart_value - measured_signal_value #getting the difference in the value sent and the on received
+        #print(f"measured uart value =  {measured_uart_value}")
+        difference = measured_uart_value - desired_pot_value #getting the difference in the value sent and the on received
         if difference > 3000 or difference < -3000:
             print("Error! PWM signal connection lost, check wires")
 
