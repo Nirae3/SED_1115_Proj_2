@@ -9,7 +9,7 @@ ADS1015_PWM = 2
 #initializing i2c bus
 i2c = I2C(1, sda=Pin(14), scl=Pin(15))
 external_adc = ADS1015(i2c, 0x48, 1) #(I2C bus, I2C address, parameter)
-print(f"external ADC = {external_adc}")
+
 
 #setting up the UART
 uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
@@ -41,6 +41,7 @@ SCALING_FACTOR = 41.5 # SCALING_FACTOR = 65535 / (  (ADS_MAX)/32  -  (ADS_MIN)/3
 
 while True:
     try:
+        
         desired_pot_value = adc_pot.read_u16() #reads from potentiometer, DUTY CYCLE
         pwm_singal.duty_u16(desired_pot_value) #generate PWM signal
         print(f"desired {desired_pot_value}")
@@ -48,6 +49,7 @@ while True:
         #uart.write((str(desired_pot_value) + "\n").encode()) #sending the PWM value via UART
         
         measured_signal_value_raw = external_adc.read(0, ADS1015_PWM) #receiving and storing the measured analog value in the external_adc variable. ADS1015 reads analot volatge on AINO0 pin
+        print(f"external ADC = {external_adc}")
         time.sleep(0.1)
         uart.write((str(measured_signal_value_raw) + "\n").encode()) #sending the PWM value via UART
        
