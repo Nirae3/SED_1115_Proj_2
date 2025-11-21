@@ -52,13 +52,13 @@ while True:
         measured_signal_value = min(measured_signal_value, 65535) ##setting the minimum signal that can be sent through at a time
         
         measured_uart_value = read_uart_line(uart) #reading the value gotten through uart
-        sending_back_measure_uart_value = uart.write(measured_signal_value)
+        
 
         difference = measured_uart_value - measured_signal_value #getting the difference in the value sent and the on received
         if difference > 3000 or difference < -3000:
             print("Error! PWM signal connection lost, check wires")
 
-        print(f"Desired raw PWM: {desired_pot_value :<10} | Actually sent: {sending_back_measure_uart_value}| Supposed to Recieve: {measured_uart_value: <10} | Measured PWM: {measured_signal_value :<10} | Diff: {difference :<10}" ) 
+        print(f"Desired raw PWM: {desired_pot_value :<10} | Actually sent: {uart.write(str(measured_signal_value).encode())}| Supposed to Recieve: {measured_uart_value: <10} | Measured PWM: {measured_signal_value :<10} | Diff: {difference :<10}" ) 
         time.sleep(0.5)
         
 
