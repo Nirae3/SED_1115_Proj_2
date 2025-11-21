@@ -57,7 +57,7 @@ while True:
         if difference > 3000 or difference < -3000:
             print("Error! PWM signal connection lost, check wires")
 
-        print(f"desired raw pwm signal: {desired_pot_value: <30} | value i got back from partenr: {measured_signal_value_raw}")
+        print(f"desired raw pwm signal: {desired_pot_value: <30} | value i got back from partenr: {uart.write(str(measured_signal_value_raw).encode())}")
         #print(f"Desired raw PWM: {desired_pot_value :<10} | Actually sent: {uart.write(str(measured_signal_value_raw).encode())}| Supposed to Recieve: {measured_uart_value: <10} | Measured PWM: {measured_signal_value :<10} | Diff: {difference :<10}" ) 
         time.sleep(0.5)
         
