@@ -9,6 +9,7 @@ ADS1015_PWM = 2
 #initializing i2c bus
 i2c = I2C(1, sda=Pin(14), scl=Pin(15))
 external_adc = ADS1015(i2c, 0x48, 1) #(I2C bus, I2C address, parameter)
+print(f"external ADC = {external_adc}")
 
 #setting up the UART
 uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
