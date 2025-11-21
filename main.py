@@ -49,30 +49,27 @@ while True:
         #uart.write((str(desired_pot_value) + "\n").encode()) #sending the PWM value via UART
         
         measured_signal_value_raw = external_adc.read(0, ADS1015_PWM) #receiving and storing the measured analog value in the external_adc variable. ADS1015 reads analot volatge on AINO0 pin
-        print(f"measured ADC val: {measured_signal_value_raw}")
-        #print(f"external ADC = {external_adc}")
+        #print(f"measured ADC val: {measured_signal_value_raw}")
+
         time.sleep(0.1)
         uart.write((str(measured_signal_value_raw) + "\n").encode()) #sending the PWM value via UART
         
-       # print(f"external ADC : {uart.write(str(measured_signal_value_raw).encode())}")
-        
-        #print(f"sent value on UART external:  {measured_signal_value_raw}")
-
 
         adjusted_raw = max(0, measured_signal_value_raw - ADS_MIN_RAW) #setting the maximum signal that can be sent through at a time
         measured_signal_value = int(adjusted_raw * SCALING_FACTOR) #turning th analog values to an integer
         measured_signal_value = min(measured_signal_value, 65535) ##setting the minimum signal that can be sent through at a time
         
         measured_uart_value = read_uart_line(uart) #reading the value gotten through uart
-        print("recieved UART value is: ",measured_uart_value)
+
+        #print("recieved UART value is: ",measured_uart_value)
         
         #print(f"measured uart value =  {measured_uart_value}")
-        difference = measured_uart_value - desired_pot_value #getting the difference in the value sent and the on received
+        difference = measured_signal_value - desired_pot_value #getting the difference in the value sent and the on received
         if difference > 3000 or difference < -3000:
             print("Error! PWM signal connection lost, check wires")
 
 #        print(f"desired raw pwm signal: {desired_pot_value: <30} | value i got back from partenr: {uart.read_uart_line(str(measured_signal_value_raw).encode())}")
-        #print(f"Desired raw PWM: {desired_pot_value :<10} | Actually sent: {uart.write(str(measured_signal_value_raw).encode())}| Supposed to Recieve: {measured_uart_value: <10} | Measured PWM: {measured_signal_value :<10} | Diff: {difference :<10}" ) 
+        print(f"Desired raw PWM: {desired_pot_value :<10} | Scaled version Of what cae back: {measured_uart_value * 40}" ) 
         time.sleep(0.5)
         
 
