@@ -58,7 +58,7 @@ while True:
         print(f"Desired raw PWM: {desired_pot_value :<10} | Supposed to Recieve: {measured_uart_value: <10} | Measured PWM: {measured_signal_value :<10} | Diff: {difference :<10}" ) 
         time.sleep(0.5)
 
-        if difference > 3000 and difference < -3000:
+        if difference > 3000 or difference < -3000:
             print("Error! connection lost, check wires")
 
     except OSError as e: #this catches any errors with the ADC / PWM conversion
