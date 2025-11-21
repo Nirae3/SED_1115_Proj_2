@@ -1,7 +1,42 @@
 from machine import PWM, UART, Pin, ADC, I2C
 import time
-#from adc1 import adc, ADS1015_PWM
 from ads1x15 import ADS1015
+
+
+# --- NEW ADDITIONS FOR PWM TIMEOUT ---
+# Configuration for the input PWM signal
+PWM_INPUT_PIN = 18           
+PWM_TIMEOUT_THRESHOLD_MS = 3 # 3ms timeout for a 1000 Hz signal (1ms period)
+
+# Global variables to track the signal heartbeat
+last_pwm_edge_time = time.ticks_ms()
+pwm_signal_active = False
+
+# Initialize the input Pin (assuming Pin 18 is where the PWM is received)
+pwm_in = Pin(PWM_INPUT_PIN, Pin.IN)
+
+# Interrupt Handler Function
+def pwm_edge_handler(pin):
+    """Updates the last_pwm_edge_time on every rising/falling edge."""
+    global last_pwm_edge_time
+    global pwm_signal_active
+    last_pwm_edge_time = time.ticks_ms()
+    pwm_signal_active = True
+
+# Assign the interrupt handler to the input pin
+pwm_in.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=pwm_edge_handler)
+
+# Check Function
+def check_pwm_timeout():
+    """Checks if the time since the last edge exceeds the threshold."""
+    global pwm_signal_active
+    elapsed = time.ticks_diff(time.ticks_ms(), last_pwm_edge_time)
+    
+    if elapsed > PWM_TIMEOUT_THRESHOLD_MS:
+        pwm_signal_active = False
+        return True # Timeout occurred
+    return False
+# -------------------------------------
 
 #ADS1015 is 12-bit. reads analog voltages and turns them into digital values
 ADS1015_PWM = 2
@@ -16,7 +51,7 @@ uart.init(bits=8, parity=None, stop=1)
 
 #turns this pin to and analog-to-digital value converter 
 adc_pot = ADC(Pin(26)) 
-pwm_singal = PWM(Pin(16), freq=1000) #automatically generates PWM signal on pin 18
+pwm_singal = PWM(Pin(16), freq=5000) #automatically generates PWM signal on pin 18
 
 #for reaceiving values from the other pico
 def read_uart_line(uart, timeout=2):
@@ -54,11 +89,23 @@ while True:
         measured_uart_value = read_uart_line(uart) #reading the value gotten through uart
 
         difference = measured_uart_value - measured_signal_value #getting the difference in the value sent and the on received
+
         if difference > 3000 or difference < -3000:
             print("Error! PWM signal connection lost, check wires")
 
-        print(f"Desired raw PWM: {desired_pot_value :<10} | Supposed to Recieve: {measured_uart_value: <10} | Measured PWM: {measured_signal_value :<10} | Diff: {difference :<10}" ) 
+        # --- NEW ADDITIONS TO THE LOOP ---
+        pwm_timed_out = check_pwm_timeout()
+        if pwm_timed_out:
+            # This is where you would place your failsafe action
+            status = "PWM TIMEOUT" 
+        else:
+            status = "PWM Active"
+        # ---------------------------------
+
+
+        print(f"Desired raw PWM: {desired_pot_value :<10} | Supposed to Recieve: {measured_uart_value: <10} | Measured PWM: {measured_signal_value :<10} | Diff: {difference :<10} | Status: {status}" ) 
         time.sleep(0.5)
+
         
 
     except OSError as e: #this catches any errors with the ADC / PWM conversion
