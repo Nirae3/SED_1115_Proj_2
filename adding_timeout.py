@@ -45,7 +45,7 @@ uart.init(bits=8, parity=None, stop=1)
 
 # ADC and PWM output
 adc_pot = ADC(Pin(26))
-pwm_signal = PWM(Pin(16), freq=5000)   # 5 kHz PWM output
+pwm_signal = PWM(Pin(16), freq=1000)   # 5 kHz PWM output
 
 # UART helper
 def read_uart_line(uart, timeout=2):
